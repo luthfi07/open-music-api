@@ -41,19 +41,20 @@ exports.up = (pgm) => {
     },
     duration : {
         type : 'INTEGER',
-        notNull : true,
+        notNull : false,
     },
     albumId : {
         type: 'VARCHAR(50)',
-        primaryKey: true,
-        references: '"albums"',
+        notNull : false,
+
     }
    
   });
-  pgm.createIndex('songs', 'albumId')
+
 };
  
 exports.down = (pgm) => {
-  pgm.dropTable('albums')
   pgm.dropTable('songs');
+  pgm.dropTable('albums')
+
 };
