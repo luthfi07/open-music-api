@@ -6,8 +6,9 @@ const AuthorizationError = require('../../exceptions/AuthorizationError');
 // const mapDBToModel = require('../../utils');
 
 class PlaylistsService {
-  constructor() {
+  constructor(collaborationService) {
     this._pool = new Pool();
+    this._collaborationService = collaborationService;
     
   }
   async addPlaylist({name, owner}){
@@ -38,9 +39,10 @@ class PlaylistsService {
     const query = {
         
         text: `SELECT playlists.id, playlists.name, users.username FROM playlists
+        LEFT JOIN collaborations ON collaborations.playlist_id = playlists.id
         LEFT JOIN playlist_songs ON playlist_songs.playlist_id = playlists.id
         LEFT JOIN users ON users.id = playlists.owner
-        WHERE playlists.owner = $1`,
+        WHERE playlists.owner = $1 OR collaborations.user_id = $1`,
         values: [owner],
       };
 
@@ -68,16 +70,14 @@ class PlaylistsService {
     const idActivities = nanoid(16);
     const action = "add";
     const time =   new Date().toISOString();
-    // console.log(playlistId);
-    // console.log(songId);
-    // console.log(credentialId);
+   
     const checkSong = {
       text : `SELECT * FROM songs WHERE id = $1 `,
       values : [songId]
     }
 
     const resultCheckSong = await this._pool.query(checkSong);
-    // console.log(resultCheck);
+  
     if(!resultCheckSong.rows[0]){
       throw new NotFoundError('Lagu tidak Ditemukan');
     }
@@ -106,12 +106,11 @@ class PlaylistsService {
   }
 
   async getSongsFromPlaylist(owner, playlistId){
-    // console.log(owner);
-    // console.log(playlistId);
+
     const query = {
         text: `SELECT playlists.id, name, username FROM playlists 
               LEFT JOIN users ON users.id = playlists.owner
-              WHERE playlists.id = $1 AND owner = $2
+              WHERE playlists.id = $1 OR owner = $2
               `,
         values: [playlistId, owner],
       };
@@ -141,9 +140,7 @@ class PlaylistsService {
       const idActivities = nanoid(16);
       const action = 'delete';
       const time =   new Date().toISOString();
-      // console.log(songId);
-      // console.log(playlistId);
-      // console.log(userId);
+
     const query = {
         text : `DELETE FROM playlist_songs WHERE song_id = $1 RETURNING id`,
         values : [songId]
@@ -165,11 +162,10 @@ class PlaylistsService {
 
   }
   async verifyPlaylistOwner(id, owner) {
-    // console.log(id);
-    // console.log(owner);
+   
     
     const query = {
-      text: 'SELECT * FROM playlists WHERE id = $1',
+      text: 'SELECT * FROM playlists WHERE playlists.id = $1 ',
       values: [id],
     };
     const result = await this._pool.query(query);
@@ -185,29 +181,29 @@ class PlaylistsService {
     }
   }
 
-  // async verifyNoteAccess(playlistId, userId) {
-  //   try {
-  //     await this.verifyNoteOwner(playlistId, userId);
-  //   } catch (error) {
-  //     if (error instanceof NotFoundError) {
-  //       throw error;
-  //     }
-  //     try {
-  //       await this._collaborationService.verifyCollaborator(playlistId, userId);
-  //     } catch {
-  //       throw error;
-  //     }
-  //   }
-  // }
+  async verifyPlaylistAccess(playlistId, userId) {
+    try {
+      await this.verifyPlaylistOwner(playlistId, userId);
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        throw error;
+      }
+      try {
+        await this._collaborationService.verifyCollaborator(playlistId, userId);
+      } catch {
+        throw error;
+      }
+    }
+  }
 
-  // async getUsersByUsername(username) {
-  //   const query = {
-  //     text: 'SELECT id, username, fullname FROM users WHERE username LIKE $1',
-  //     values: [`%${username}%`],
-  //   };
-  //   const result = await this._pool.query(query);
-  //   return result.rows;
-  // }
+  async getUsersByUsername(username) {
+    const query = {
+      text: 'SELECT id, username, fullname FROM users WHERE username LIKE $1',
+      values: [`%${username}%`],
+    };
+    const result = await this._pool.query(query);
+    return result.rows;
+  }
 }
 
 module.exports = PlaylistsService;
