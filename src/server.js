@@ -26,13 +26,14 @@ const AuthenticationsValidator = require('./validator/authentications');
 
 // playlists
 const playlists = require('./api/playlists');
-const playlistsService = require('./services/postgres/PlaylistsService');
+const PlaylistsService = require('./services/postgres/PlaylistsService');
 const PlaylistsValidator = require('./validator/playlists');
 
 const init = async () => {
   const albumsService = new AlbumsService();
   const songsService = new SongsService();
   const usersService = new UsersService();
+  const playlistsService = new PlaylistsService();
   const authenticationsService = new AuthenticationsService();
 
   const server = Hapi.server({

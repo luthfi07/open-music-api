@@ -79,7 +79,6 @@ exports.up = (pgm) => {
     },
     name: {
       type: 'VARCHAR(50)',
-      unique: true,
       notNull: true,
     },
     owner: {
@@ -97,7 +96,6 @@ exports.up = (pgm) => {
     },
     playlist_id: {
       type: 'VARCHAR(50)',
-      unique: true,
       notNull: true,
     },
     song_id: {
