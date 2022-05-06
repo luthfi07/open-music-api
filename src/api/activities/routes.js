@@ -7,6 +7,7 @@ const routes = (handler) => [
         auth: 'openmusic_jwt',
       },
     },
+    
    
   ];
   
